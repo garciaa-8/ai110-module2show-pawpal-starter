@@ -53,7 +53,10 @@ Paste a sample of your app's CLI or Streamlit output here so a reader can see wh
 #   09:00 — Feeding (10 min) [priority: high]
 #   ...
 ```
-
+Today's Schedule - Sunday, October 11, 2026
+08:00 AM - Morning walk for Bailey (30 min)
+12:00 PM - Breakfast for Miso (10 min)
+06:00 PM - Medication for Bailey (5 min)
 ## 🧪 Testing PawPal+
 
 ```bash

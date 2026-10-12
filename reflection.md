@@ -6,14 +6,23 @@
 -see event history 
 
 **a. Initial design**
-
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
+
+-Owner represents the person using PawPal+. An owner can have multiple pets and can request scheduling, completion, or event history.
+Pet belongs to an owner and has care tasks, such as feeding or medication.
+-Task defines the reusable care activity, including its name, duration, frequency, and priority.
+-Scheduler manages care events and provides operations for scheduling, rescheduling, and retrieving upcoming events or history.
+-CareEvent is one dated occurrence of a task for a specific pet. Its status and timestamps let the app record whether it was scheduled, completed, or skipped.
+-EventStatus enumerates those three event states.
+
 
 **b. Design changes**
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
+
+During implementation, I clarified how event history is linked to an owner. I added a Scheduler reference to Owner and changed the Scheduler's upcoming-event and history methods to accept an Owner, so they can use that owner's pets to identify the right events. I also added a Scheduler completion method so Owner can delegate event completion to the same class that manages scheduled events. This makes the ownership and responsibility links explicit while keeping individual event records connected to their pet and task.
 
 ---
 
