@@ -30,13 +30,11 @@ During implementation, I clarified how event history is linked to an owner. I ad
 
 **a. Constraints and priorities**
 
-- What constraints does your scheduler consider (for example: time, priority, preferences)?
-- How did you decide which constraints mattered most?
+The scheduler sorts tasks by priority first, then by duration and name, so high-priority care appears first. It also compares scheduled event time intervals using each task's duration to find overlaps, and creates the next occurrence for daily and weekly tasks when an event is completed. It does not yet account for an owner's available time or preferences. The conflict check currently compares every pair of scheduled events, which is easy to understand but takes quadratic time as the schedule grows. For better performance on larger schedules, I could sort events by start time and skip later events once they start after the current event ends; this avoids many unnecessary comparisons when events rarely overlap, while keeping the current simple approach for a small schedule.
 
 **b. Tradeoffs**
 
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
+The scheduler warns about overlapping events but does not block them. This keeps scheduling flexible, especially when overlapping care tasks can be handled by different people, but it means the owner must review and resolve the warning. For this small app, a clear warning is less disruptive than rejecting a schedule automatically.
 
 ---
 

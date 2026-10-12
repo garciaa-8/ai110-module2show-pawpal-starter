@@ -75,14 +75,13 @@ Sample test output:
 
 ## 📐 Smarter Scheduling
 
-> Fill in once you've implemented scheduling logic.
-
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Task sorting | `Scheduler.get_tasks(owner)` | Sorts by priority (high to low), then duration and task name. |
+| Event time sorting | `Scheduler.get_upcoming_events(owner)` | Returns future scheduled events in chronological order. |
+| Filtering | `Scheduler.filter_tasks(owner, completed, pet_name)` | Optional completion and exact, case-insensitive pet-name filters; when both are provided, both must match. `Scheduler.get_tasks(owner, include_completed=False)` can also exclude completed tasks. |
+| Conflict detection | `Scheduler.find_conflicts()`, `Scheduler.get_conflict_warning(event)` | Checks overlapping scheduled-event intervals using task durations. Touching end/start times are not conflicts. The app warns but does not block scheduling. |
+| Recurring tasks | `Scheduler.complete_event(event_id)` | Completing a daily or weekly event creates a fresh task and schedules its next event one day or one week later at the same time. Other frequencies do not repeat. |
 
 ## 📸 Demo Walkthrough
 

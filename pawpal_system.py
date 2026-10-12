@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import date, datetime
+from dataclasses import dataclass, field, replace
+from datetime import date, datetime, timedelta
 from enum import Enum
 from typing import Optional
 from uuid import uuid4
@@ -92,11 +92,24 @@ class Scheduler:
 	def complete_event(
 		self, event_id: str, owner: Optional[Owner] = None
 	) -> None:
-		"""Complete an event, optionally verifying its owner."""
+		"""Complete an event and schedule daily or weekly repeats at the same time."""
 		event = self._find_event(event_id)
 		if owner is not None and not owner._owns_pet(event.pet):
 			raise ValueError("The event does not belong to this owner")
 		event.mark_complete()
+
+		recurrence = {
+			"daily": timedelta(days=1),
+			"weekly": timedelta(weeks=1),
+		}.get(event.task.frequency.strip().casefold())
+		if recurrence is not None:
+			next_task = replace(event.task, is_completed=False)
+			event.pet.add_task(next_task)
+			self.schedule(
+				next_task,
+				event.pet,
+				event.scheduled_at + recurrence,
+			)
 
 	def get_upcoming_events(self, owner: Owner) -> list[CareEvent]:
 		"""Return an owner's scheduled events in chronological order."""
@@ -122,10 +135,55 @@ class Scheduler:
 			key=lambda event: event.completed_at or event.scheduled_at,
 		)
 
+	def find_conflicts(self) -> list[tuple[CareEvent, CareEvent]]:
+		"""Compare scheduled event pairs and return those with overlapping intervals.
+
+		Events that touch only at an end time do not count as conflicts.
+		"""
+		scheduled_events = [
+			event
+			for event in self.events
+			if event.status is EventStatus.SCHEDULED
+		]
+		conflicts = []
+		for index, first_event in enumerate(scheduled_events):
+			first_end = first_event.scheduled_at + timedelta(
+				minutes=first_event.task.duration_minutes
+			)
+			for second_event in scheduled_events[index + 1 :]:
+				second_end = second_event.scheduled_at + timedelta(
+					minutes=second_event.task.duration_minutes
+				)
+				if (
+					first_event.scheduled_at < second_end
+					and second_event.scheduled_at < first_end
+				):
+					conflicts.append((first_event, second_event))
+		return conflicts
+
+	def get_conflict_warning(self, event: CareEvent) -> Optional[str]:
+		"""Describe the first conflict involving this event, or return None."""
+		for first_event, second_event in self.find_conflicts():
+			if event.event_id == first_event.event_id:
+				other_event = second_event
+			elif event.event_id == second_event.event_id:
+				other_event = first_event
+			else:
+				continue
+			return (
+				f"Schedule conflict: {event.task.name} for {event.pet.name} "
+				f"overlaps with {other_event.task.name} for "
+				f"{other_event.pet.name}."
+			)
+		return None
+
 	def get_tasks(
 		self, owner: Owner, include_completed: bool = True
 	) -> list[Task]:
-		"""Return an owner's tasks ordered by priority, duration, and name."""
+		"""Sort an owner's tasks by priority, then duration, then name.
+
+		High priority sorts first; ties prefer shorter and alphabetically earlier tasks.
+		"""
 		tasks = [
 			task
 			for pet in owner.pets
@@ -141,6 +199,26 @@ class Scheduler:
 				task.name.casefold(),
 			),
 		)
+
+	def filter_tasks(
+		self,
+		owner: Owner,
+		completed: Optional[bool] = None,
+		pet_name: Optional[str] = None,
+	) -> list[Task]:
+		"""Filter by completion status and exact, case-insensitive pet name.
+
+		When both filters are provided, a task must match both.
+		"""
+		normalized_pet_name = pet_name.strip().casefold() if pet_name else None
+		return [
+			task
+			for pet in owner.pets
+			if normalized_pet_name is None
+			or pet.name.casefold() == normalized_pet_name
+			for task in pet.tasks
+			if completed is None or task.is_completed is completed
+		]
 
 	def _find_event(self, event_id: str) -> CareEvent:
 		"""Find an event by ID or raise a KeyError if absent."""
