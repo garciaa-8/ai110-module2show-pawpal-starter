@@ -1,6 +1,9 @@
 # PawPal+ Project Reflection
 
 ## 1. System Design
+-schedule events
+-check off events 
+-see event history 
 
 **a. Initial design**
 

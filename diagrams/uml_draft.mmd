@@ -1,0 +1,55 @@
+classDiagram
+    class Owner {
+        +String name
+        +addPet(pet) void
+        +scheduleEvent(pet, task, dateTime) CareEvent
+        +completeEvent(eventId) void
+        +viewEventHistory() List~CareEvent~
+    }
+
+    class Pet {
+        +String name
+        +String species
+        +Date birthDate
+        +addTask(task) void
+        +getTasks() List~Task~
+    }
+
+    class Task {
+        +String name
+        +String description
+        +int durationMinutes
+        +String frequency
+        +String priority
+    }
+
+    class Scheduler {
+        +schedule(task, pet, dateTime) CareEvent
+        +reschedule(eventId, dateTime) void
+        +getUpcomingEvents(ownerId) List~CareEvent~
+        +getEventHistory(ownerId) List~CareEvent~
+    }
+
+    class CareEvent {
+        +String eventId
+        +DateTime scheduledAt
+        +EventStatus status
+        +DateTime completedAt
+        +reschedule(dateTime) void
+        +markComplete() void
+    }
+
+    class EventStatus {
+        <<enumeration>>
+        SCHEDULED
+        COMPLETED
+        SKIPPED
+    }
+
+    Owner "1" o-- "0..*" Pet : owns
+    Pet "1" o-- "0..*" Task : has care tasks
+    Owner "1" --> "1" Scheduler : uses
+    Scheduler "1" --> "0..*" CareEvent : manages
+    CareEvent "0..*" --> "1" Task : scheduled from
+    CareEvent "0..*" --> "1" Pet : cares for
+    CareEvent --> EventStatus : has status
