@@ -80,24 +80,46 @@ tests/test_pawpal.py .............                                              
 ```
 Confidence LEvel of Reliabilty: 4 Stars 
 
-## 📐 Smarter Scheduling
+## Features
 
-| Feature | Method(s) | Notes |
-|---------|-----------|-------|
-| Task sorting | `Scheduler.get_tasks(owner)` | Sorts by priority (high to low), then duration and task name. |
-| Event time sorting | `Scheduler.get_upcoming_events(owner)` | Returns future scheduled events in chronological order. |
-| Filtering | `Scheduler.filter_tasks(owner, completed, pet_name)` | Optional completion and exact, case-insensitive pet-name filters; when both are provided, both must match. `Scheduler.get_tasks(owner, include_completed=False)` can also exclude completed tasks. |
-| Conflict detection | `Scheduler.find_conflicts()`, `Scheduler.get_conflict_warning(event)` | Checks overlapping scheduled-event intervals using task durations. Touching end/start times are not conflicts. The app warns but does not block scheduling. |
-| Recurring tasks | `Scheduler.complete_event(event_id)` | Completing a daily or weekly event creates a fresh task and schedules its next event one day or one week later at the same time. Other frequencies do not repeat. |
+- **Priority-based task sorting:** `Scheduler.get_tasks()` orders tasks by priority (high, medium, then low), then shorter duration, then task name. Unrecognized priorities sort after the known levels.
+- **Task filters:** Filter by completion status, pet name, or both. Pet-name matching is exact and case-insensitive; when both filters are set, a task must match both. The app displays matching tasks in scheduler sort order.
+- **Chronological upcoming schedule:** `Scheduler.get_upcoming_events()` returns only future, scheduled events belonging to the owner, sorted by date and time.
+- **Schedule conflict warnings:** `Scheduler.find_conflicts()` detects overlapping event intervals using task durations. Events that touch at an end time do not conflict. The app displays warnings without blocking scheduling.
+- **Daily and weekly recurrence:** Completing a daily or weekly event creates a fresh, incomplete task for the same pet and schedules it at the same time the next day or week. Other frequencies do not repeat.
+- **Scheduling and event validation:** A task must belong to the selected pet, and that pet must belong to the owner. Completed events cannot be completed or rescheduled again.
 
-## 📸 Demo Walkthrough
+## Demo Walkthrough
 
-Describe your app in numbered steps so a reader can follow along without watching a video:
+Run the interface with `streamlit run app.py`, or run the CLI example with `python main.py`.
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+1. Enter an owner name, then add a pet with its name, species, and birth date. The Pets table shows each pet and its task count.
+2. Schedule care by selecting a pet and entering the task name, description, duration, frequency, priority, and a future date and time. The app confirms a successful schedule or displays a conflict warning.
+3. Use the Care tasks filters to view tasks for one pet or all pets, and to show pending, completed, or all tasks. Results follow the Scheduler's priority, duration, and name ordering.
+4. Review the Upcoming schedule, which lists future events chronologically and includes conflict warnings. Overlapping event durations trigger warnings; events that only touch at an end time do not.
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+The Scheduler also supports daily and weekly recurrence when an event is completed, creating a fresh task and scheduling it for the next interval. Event completion is currently available through the Python API, not as a control in the Streamlit interface.
+
+Sample output from `main.py` (the date is calculated at runtime):
+
+```text
+$ python main.py
+Tasks sorted by priority, duration, and name:
+- High: Medication (5 min)
+- High: Breakfast (10 min)
+- Medium: Morning walk (30 min)
+
+Upcoming schedule for Monday, October 12, 2026:
+- 08:00 AM: Morning walk for Bailey
+- 08:00 AM: Breakfast for Miso
+- 06:00 PM: Medication for Bailey
+WARNING: Schedule conflict: Breakfast for Miso overlaps with Morning walk for Bailey.
+
+Completed tasks:
+- Medication
+
+Tasks for Bailey:
+- Medication (high)
+- Morning walk (medium)
+- Medication (high)
+```

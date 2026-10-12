@@ -1,0 +1,74 @@
+classDiagram
+    class Owner {
+        +name: str
+        +scheduler: Scheduler
+        +pets: List~Pet~
+        +add_pet(pet) None
+        +get_all_tasks(include_completed=True) List~Task~
+        +schedule_event(pet, task, date_time) CareEvent
+        +complete_event(event_id) None
+        +view_event_history() List~CareEvent~
+        -_owns_pet(pet) bool
+    }
+
+    class Pet {
+        +name: str
+        +species: str
+        +birth_date: date
+        +tasks: List~Task~
+        +add_task(task) None
+        +get_tasks() List~Task~
+    }
+
+    class Task {
+        +name: str
+        +description: str
+        +duration_minutes: int
+        +frequency: str
+        +priority: str
+        +is_completed: bool
+        +mark_complete() None
+    }
+
+    class Scheduler {
+        +events: List~CareEvent~
+        +schedule(task, pet, date_time) CareEvent
+        +reschedule(event_id, date_time) None
+        +complete_event(event_id, owner=None) None
+        +get_upcoming_events(owner) List~CareEvent~
+        +get_event_history(owner) List~CareEvent~
+        +find_conflicts() List~tuple~
+        +get_conflict_warning(event) Optional~str~
+        +get_tasks(owner, include_completed=True) List~Task~
+        +filter_tasks(owner, completed=None, pet_name=None) List~Task~
+        -_find_event(event_id) CareEvent
+    }
+
+    class CareEvent {
+        +event_id: str
+        +scheduled_at: datetime
+        +task: Task
+        +pet: Pet
+        +status: EventStatus
+        +completed_at: Optional~datetime~
+        +reschedule(date_time) None
+        +mark_complete() None
+    }
+
+    class EventStatus {
+        <<enumeration>>
+        SCHEDULED
+        COMPLETED
+        SKIPPED
+    }
+
+    Owner "1" o-- "0..*" Pet : pets
+    Pet "0..*" o-- "0..*" Task : tasks
+    Owner "0..*" --> "1" Scheduler : scheduler
+    Scheduler "1" --> "0..*" CareEvent : manages
+    CareEvent "0..*" --> "1" Task : task
+    CareEvent "0..*" --> "1" Pet : pet
+    CareEvent --> EventStatus : has status
+
+    note for Scheduler "get_tasks sorts by priority, duration, then name. get_upcoming_events returns future scheduled events in chronological order."
+    note for Scheduler "Completing a daily or weekly event marks its task complete, then creates a new task and event for the same pet. Conflicts produce warnings but do not block scheduling."

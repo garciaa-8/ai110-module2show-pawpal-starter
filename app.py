@@ -56,6 +56,60 @@ else:
     st.info("Add a pet to start scheduling care.")
 
 st.divider()
+st.subheader("Care tasks")
+
+if owner.pets:
+    filter_col, status_col = st.columns(2)
+    with filter_col:
+        selected_task_pet = st.selectbox(
+            "Filter by pet",
+            ["All pets", *(pet.name for pet in owner.pets)],
+            key="task_pet_filter",
+        )
+    with status_col:
+        selected_task_status = st.selectbox(
+            "Filter by status",
+            ["All", "Pending", "Completed"],
+            key="task_status_filter",
+        )
+
+    completed_filter = {"Pending": False, "Completed": True}.get(
+        selected_task_status
+    )
+    filtered_tasks = owner.scheduler.filter_tasks(
+        owner,
+        completed=completed_filter,
+        pet_name=(
+            None if selected_task_pet == "All pets" else selected_task_pet
+        ),
+    )
+    filtered_task_ids = {id(task) for task in filtered_tasks}
+    display_tasks = [
+        task
+        for task in owner.scheduler.get_tasks(owner)
+        if id(task) in filtered_task_ids
+    ]
+
+    if display_tasks:
+        st.table(
+            [
+                {
+                    "Task": task.name,
+                    "Description": task.description,
+                    "Duration": f"{task.duration_minutes} min",
+                    "Frequency": task.frequency.title(),
+                    "Priority": task.priority.title(),
+                    "Status": "Completed" if task.is_completed else "Pending",
+                }
+                for task in display_tasks
+            ]
+        )
+    else:
+        st.info("No tasks match these filters.")
+else:
+    st.info("Add a pet to view care tasks.")
+
+st.divider()
 st.subheader("Schedule a task")
 
 if owner.pets:
@@ -122,6 +176,9 @@ if upcoming_events:
                 "Task": event.task.name,
                 "Duration": f"{event.task.duration_minutes} min",
                 "Priority": event.task.priority.title(),
+                "Conflict warning": (
+                    owner.scheduler.get_conflict_warning(event) or "None"
+                ),
             }
             for event in upcoming_events
         ]
