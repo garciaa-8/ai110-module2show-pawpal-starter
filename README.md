@@ -12,6 +12,8 @@ A busy pet owner needs help staying consistent with pet care. They want an assis
 
 Your job is to design the system first (UML), then implement the logic in Python, then connect it to the Streamlit UI.
 
+## Testing PawPal+
+
 ## What you will build
 
 Your final app should:
@@ -60,18 +62,23 @@ Today's Schedule - Sunday, October 11, 2026
 ## 🧪 Testing PawPal+
 
 ```bash
-# Run the full test suite:
-pytest
-
-# Run with coverage:
-pytest --cov
+python -m pytest
 ```
+
+The tests cover task completion and addition, task filtering and sorting, chronological event ordering, daily and weekly recurrence, schedule conflicts, and edge cases such as invalid scheduling and repeated event completion.
 
 Sample test output:
 
 ```
-# Paste your pytest output here
+platform darwin -- Python 3.9.6, pytest-8.4.2, pluggy-1.6.0
+rootdir: /Users/albert_garcia7/ai110-module2show-pawpal-starter
+collected 13 items                                                                                                                               
+
+tests/test_pawpal.py .............                                                                                                         [100%]
+
+=============================================================== 13 passed in 0.01s ===============================================================   
 ```
+Confidence LEvel of Reliabilty: 4 Stars 
 
 ## 📐 Smarter Scheduling
 

@@ -39,6 +39,29 @@ def test_adding_task_increases_pet_task_count() -> None:
 	assert pet.get_tasks()[0] is task
 
 
+def test_adding_same_task_twice_keeps_one_instance() -> None:
+	pet = Pet(name="Milo", species="Cat", birth_date=date(2020, 1, 1))
+	task = Task("Feeding", "Serve breakfast", 10, "daily", "high")
+
+	pet.add_task(task)
+	pet.add_task(task)
+
+	assert pet.get_tasks() == [task]
+
+
+def test_scheduling_requires_task_to_belong_to_pet() -> None:
+	scheduler = Scheduler()
+	owner = Owner(name="Jordan", scheduler=scheduler)
+	pet = Pet(name="Miso", species="Cat", birth_date=date(2022, 1, 1))
+	owner.add_pet(pet)
+	task = Task("Feeding", "Feed Miso", 10, "daily", "high")
+
+	with pytest.raises(ValueError, match="task must belong to the pet"):
+		owner.schedule_event(pet, task, datetime(2026, 10, 12, 8, 0))
+
+	assert scheduler.events == []
+
+
 def test_scheduler_filters_tasks_by_status_and_pet_name() -> None:
 	scheduler = Scheduler()
 	owner = Owner(name="Jordan", scheduler=scheduler)
@@ -67,6 +90,23 @@ def test_scheduler_filters_tasks_by_status_and_pet_name() -> None:
 	assert scheduler.filter_tasks(
 		owner, completed=True, pet_name="Miso"
 	) == [miso_completed]
+
+
+def test_upcoming_events_are_returned_in_chronological_order() -> None:
+	scheduler = Scheduler()
+	owner = Owner(name="Jordan", scheduler=scheduler)
+	pet = Pet(name="Miso", species="Cat", birth_date=date(2022, 1, 1))
+	owner.add_pet(pet)
+	start = datetime(2026, 10, 12, 8, 0)
+
+	late_task = Task("Evening meal", "Feed Miso", 10, "once", "high")
+	early_task = Task("Morning meal", "Feed Miso", 10, "once", "high")
+	pet.add_task(late_task)
+	pet.add_task(early_task)
+	late_event = owner.schedule_event(pet, late_task, start + timedelta(hours=10))
+	early_event = owner.schedule_event(pet, early_task, start)
+
+	assert scheduler.get_upcoming_events(owner) == [early_event, late_event]
 
 
 @pytest.mark.parametrize(
@@ -132,6 +172,22 @@ def test_scheduler_finds_same_pet_and_cross_pet_time_conflicts() -> None:
 	}
 
 
+def test_events_touching_at_end_time_do_not_conflict() -> None:
+	scheduler = Scheduler()
+	owner = Owner(name="Jordan", scheduler=scheduler)
+	pet = Pet(name="Miso", species="Cat", birth_date=date(2022, 1, 1))
+	owner.add_pet(pet)
+
+	first_task = Task("Feeding", "Feed Miso", 10, "once", "high")
+	second_task = Task("Medication", "Dose Miso", 5, "once", "high")
+	pet.add_task(first_task)
+	pet.add_task(second_task)
+	owner.schedule_event(pet, first_task, datetime(2026, 10, 12, 8, 0))
+	owner.schedule_event(pet, second_task, datetime(2026, 10, 12, 8, 10))
+
+	assert scheduler.find_conflicts() == []
+
+
 def test_conflict_warning_returns_message_without_raising() -> None:
 	scheduler = Scheduler()
 	owner = Owner(name="Jordan", scheduler=scheduler)
@@ -155,3 +211,26 @@ def test_conflict_warning_returns_message_without_raising() -> None:
 		"Schedule conflict: Medication for Miso overlaps with Feeding for Miso."
 	)
 	assert scheduler.get_conflict_warning(scheduler.events[0]) is not None
+
+
+def test_completed_event_cannot_be_rescheduled_or_completed_again() -> None:
+	scheduler = Scheduler()
+	owner = Owner(name="Jordan", scheduler=scheduler)
+	pet = Pet(name="Miso", species="Cat", birth_date=date(2022, 1, 1))
+	owner.add_pet(pet)
+	task = Task("Feeding", "Feed Miso", 10, "once", "high")
+	pet.add_task(task)
+	event = owner.schedule_event(pet, task, datetime(2026, 10, 12, 8, 0))
+	owner.complete_event(event.event_id)
+
+	with pytest.raises(ValueError, match="Only scheduled events can be rescheduled"):
+		scheduler.reschedule(event.event_id, datetime(2026, 10, 13, 8, 0))
+	with pytest.raises(ValueError, match="Only scheduled events can be completed"):
+		owner.complete_event(event.event_id)
+
+
+def test_rescheduling_unknown_event_raises_key_error() -> None:
+	scheduler = Scheduler()
+
+	with pytest.raises(KeyError, match="No care event found"):
+		scheduler.reschedule("missing-event", datetime(2026, 10, 12, 8, 0))
